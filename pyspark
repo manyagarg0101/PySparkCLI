@@ -1,0 +1,13 @@
+lines = sc.textFile("s3://manyasbucket/PageRank/edgelist.txt")
+links = lines.map(lambda url_line: url_line.split(" ")).groupByKey()
+ranks = links.map(lambda url_neighbors: (url_neighbors[0], 1.0))
+
+def computeContribs(urls, rank):
+num_urls = len(urls)
+for url in urls:
+yield (url, rank / num_urls)
+
+for i in range(10):
+contribs = links.join(ranks).flatMap(lambda x: computeContribs(x[1][0], x[1][1]))
+new_ranks = contribs.reduceByKey(lambda x,y:x+y).mapValues(lambda rank: rank * 0.85 + 0.15)
+new_ranks.collect()
